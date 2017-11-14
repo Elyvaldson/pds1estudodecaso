@@ -3,8 +3,12 @@ package com.elyvaldson.cursomc.services;
 import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 
+import com.elyvaldson.cursomc.domain.Cliente;
 import com.elyvaldson.cursomc.domain.ItemPedido;
 import com.elyvaldson.cursomc.domain.PagamentoComBoleto;
 import com.elyvaldson.cursomc.domain.Pedido;
@@ -14,6 +18,8 @@ import com.elyvaldson.cursomc.repositories.ItemPedidoRepository;
 import com.elyvaldson.cursomc.repositories.PagamentoRepository;
 import com.elyvaldson.cursomc.repositories.PedidoRepository;
 import com.elyvaldson.cursomc.repositories.ProdutoRepository;
+import com.elyvaldson.cursomc.security.UserSS;
+import com.elyvaldson.cursomc.services.exceptions.AuthorizationException;
 import com.elyvaldson.cursomc.services.exceptions.ObjectNotFoundException;
 
 @Service
@@ -70,5 +76,16 @@ public class PedidoService {
 		emailService.sendOrderConfirmationEmail(obj);
 		
 		return obj;
+	}
+	
+	public Page<Pedido> findPage(Integer page, Integer linesPerPage, String orderBy, String direction){
+		UserSS user = UserService.authenticated();
+		if(user == null) {
+			throw new AuthorizationException("Acesso negado");
+		}
+		
+		PageRequest pageRequest = new PageRequest(page, linesPerPage, Direction.valueOf(direction), orderBy);
+		Cliente cliente = clienteRepository.findOne(user.getId());
+		return repo.findByCliente(cliente, pageRequest);
 	}
 }
